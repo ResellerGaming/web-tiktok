@@ -2,242 +2,272 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>TikTok Clone 2.0</title>
+  <title>Fik – TikTok Clone</title>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <style>
     :root{--pink:#fe2c55}
     *{box-sizing:border-box;margin:0;padding:0}
-    html,body{height:100%;overflow:hidden}
+    html,body{height:100%}
     body{
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-      background:#000;color:#fff;
-      display:flex;flex-direction:column;
+      overflow-y:scroll;
       scroll-snap-type:y mandatory;
-      scroll-behavior:smooth;
       -webkit-overflow-scrolling:touch;
-    }
-    /* ===== FEED ===== */
-    section.feed{
-      flex:none;width:100vw;height:100vh;
-      scroll-snap-align:start;
-      position:relative;display:flex;
-      align-items:center;justify-content:center;
       background:#000;
+      color:#fff;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     }
-    video{width:100%;height:100%;object-fit:cover}
-    /* left info */
-    .info{
-      position:absolute;left:14px;bottom:110px;
-      max-width:65%;
+    ::-webkit-scrollbar{display:none}
+
+    section{
+      width:100vw;height:100vh;
+      scroll-snap-align:start;
+      position:relative;
+      display:flex;align-items:center;justify-content:center;
     }
-    .info .row{display:flex;align-items:center;gap:10px}
-    .info img{
-      width:44px;height:44px;border-radius:50%;
-      border:2px solid var(--pink);
+    video{width:100%;height:100%;object-fit:contain} /* native resolution */
+
+    /* ===== Double-tap like ===== */
+    .dblLayer{position:absolute;top:0;left:0;width:100%;height:100%;z-index:2}
+    .heartPop{
+      position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+      font-size:120px;color:var(--pink);pointer-events:none;
+      animation:heartBang .5s ease;
     }
+    @keyframes heartBang{0%{transform:translate(-50%,-50%) scale(0)}50%{transform:translate(-50%,-50%) scale(1.2)}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+
+    /* ===== Hold slow-mo ===== */
+    .slowHint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+      background:rgba(0,0,0,.6);padding:8px 16px;border-radius:20px;font-size:14px;display:none}
+
+    /* ===== left info ===== */
+    .info{position:absolute;left:14px;bottom:110px;max-width:65%}
+    .info img{width:44px;height:44px;border-radius:50%;border:2px solid var(--pink)}
     .info .name{font-weight:600;font-size:15px;margin-bottom:4px}
     .info .desc{font-size:14px;line-height:1.3}
-    /* right icons */
-    .overlay{
-      position:absolute;right:14px;bottom:100px;
-      display:flex;flex-direction:column;align-items:center;gap:22px;
-    }
-    .overlay button{
-      background:rgba(34,34,34,.6);border:none;color:#fff;
-      font-size:30px;width:56px;height:56px;border-radius:50%;
-      cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-      backdrop-filter:blur(4px);
-    }
+
+    /* ===== right icons ===== */
+    .overlay{position:absolute;right:14px;bottom:100px;display:flex;flex-direction:column;align-items:center;gap:22px}
+    .overlay button{background:rgba(34,34,34,.6);border:none;color:#fff;font-size:30px;width:56px;height:56px;border-radius:50%;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;backdrop-filter:blur(4px)}
     .overlay button:active{transform:scale(.85)}
     .overlay button span{font-size:11px;font-weight:600}
     .liked{color:var(--pink)!important}
-    @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.4)}100%{transform:scale(1)}}
-    /* progress */
-    .progress{position:absolute;bottom:0;left:0;height:3px;background:rgba(255,255,255,.25);width:100%}
-    .progress-bar{height:100%;background:#fff;width:0}
-    /* mute */
-    .mute-btn{position:absolute;bottom:14px;left:14px;background:rgba(34,34,34,.6);border:none;color:#fff;font-size:24px;width:44px;height:44px;border-radius:50%;cursor:pointer;backdrop-filter:blur(4px)}
 
-    /* ===== PROFIL ===== */
-    #profile{
-      position:fixed;top:0;right:-100%;width:100%;height:100%;
-      background:#111;z-index:10;transition:right .35s ease;
+    /* ===== segmented progress ===== */
+    .progressWrap{position:absolute;bottom:0;left:0;width:100%;height:3px;display:flex}
+    .seg{flex:1;height:100%;background:rgba(255,255,255,.25);margin-right:2px;cursor:pointer}
+    .seg:last-child{margin-right:0}
+    .segFill{height:100%;background:#fff;width:0}
+
+    /* ===== volume slider ===== */
+    .volSlider{position:absolute;bottom:14px;left:60px;width:100px;height:4px;background:rgba(255,255,255,.3);border-radius:2px;display:none}
+    .volFill{height:100%;background:#fff;border-radius:2px;width:0}
+
+    /* ===== comment sheet ===== */
+    #commentSheet{
+      position:fixed;bottom:-100%;left:0;width:100%;height:70%;
+      background:#1a1a1a;border-radius:24px 24px 0 0;
+      transition:bottom .35s ease;z-index:20;padding:20px;
+    }
+    #commentSheet.open{bottom:0}
+    .dragBar{width:40px;height:4px;background:#444;border-radius:2px;margin:0 auto 20px;cursor:pointer}
+
+    /* ===== profile page ===== */
+    #profilePage{
+      position:fixed;top:0;left:-100%;width:100%;height:100%;
+      background:#111;z-index:15;transition:left .35s ease;
       overflow-y:auto;
     }
-    #profile.open{right:0}
-    .prof-header{
-      display:flex;align-items:center;gap:15px;
-      padding:20px;border-bottom:1px solid #333;
-    }
-    .prof-header img{width:80px;height:80px;border-radius:50%;border:3px solid var(--pink)}
-    .prof-header h2{font-size:20px}
-    .prof-bio{padding:20px;font-size:14px;line-height:1.4}
-    .close-prof{
-      position:absolute;top:20px;left:20px;
-      background:none;border:none;color:#fff;font-size:28px;cursor:pointer;
-    }
+    #profilePage.open{left:0}
+    .profHeader{display:flex;align-items:center;gap:15px;padding:20px;border-bottom:1px solid #333}
+    .profHeader img{width:80px;height:80px;border-radius:50%;border:3px solid var(--pink)}
+    .closeProf{position:absolute;top:20px;right:20px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer}
   </style>
 </head>
 <body>
 
-  <!-- ===== FEED ===== -->
-  <section class="feed" data-vid="0">
+  <!-- ===== FEED 1 ===== -->
+  <section>
     <video data-src="/video/vidio1.mp4" muted loop playsinline></video>
+    <div class="dblLayer"></div>
+    <div class="heartPop">❤</div>
+    <div class="slowHint">Slow-mo</div>
+
     <div class="info">
-      <div class="row">
-        <img src="pp1.jpg" alt="">
-        <div>
-          <div class="name">@kucing_imut</div>
-          <div class="desc">Main di taman #cat #fyp</div>
-        </div>
-      </div>
+      <img src="p1.jpg" alt="">
+      <div class="name">@kucing_imut</div>
+      <div class="desc">Main di taman #cat #fyp</div>
     </div>
+
     <div class="overlay">
       <button onclick="toggleLike(this)">❤<span>0</span></button>
-      <button>💬<span>0</span></button>
-      <button>↗️<span>Share</span></button>
+      <button onclick="toggleComment()">💬<span>0</span></button>
+      <button onclick="openPiP()">📺</button>
+      <button onclick="goFullscreen()">⛶</button>
     </div>
-    <div class="progress"><div class="progress-bar"></div></div>
+
+    <div class="progressWrap"></div>
     <button class="mute-btn" onclick="toggleMute(this)">🔇</button>
+    <div class="volSlider"><div class="volFill"></div></div>
   </section>
 
-  <section class="feed" data-vid="1">
+  <!-- ===== FEED 2 ===== -->
+  <section>
     <video data-src="/video/vidio2.mp4" muted loop playsinline></video>
+    <div class="dblLayer"></div>
+    <div class="heartPop">❤</div>
+    <div class="slowHint">Slow-mo</div>
+
     <div class="info">
-      <div class="row">
-        <img src="pp2.jpg" alt="">
-        <div>
-          <div class="name">@masak_hariini</div>
-          <div class="desc">Resep nasi goreng 3 menit! #cook</div>
-        </div>
-      </div>
+      <img src="p2.jpg" alt="">
+      <div class="name">@masak_hariini</div>
+      <div class="desc">Nasi goreng 3 menit! #cook</div>
     </div>
+
     <div class="overlay">
       <button onclick="toggleLike(this)">❤<span>0</span></button>
-      <button>💬<span>0</span></button>
-      <button>↗️<span>Share</span></button>
+      <button onclick="toggleComment()">💬<span>0</span></button>
+      <button onclick="openPiP()">📺</button>
+      <button onclick="goFullscreen()">⛶</button>
     </div>
-    <div class="progress"><div class="progress-bar"></div></div>
+
+    <div class="progressWrap"></div>
     <button class="mute-btn" onclick="toggleMute(this)">🔇</button>
+    <div class="volSlider"><div class="volFill"></div></div>
   </section>
 
-  <section class="feed" data-vid="2">
-    <video data-src="video3.mp4" muted loop playsinline></video>
+  <!-- ===== FEED 3 ===== -->
+  <section>
+    <video data-src="v3.mp4" muted loop playsinline></video>
+    <div class="dblLayer"></div>
+    <div class="heartPop">❤</div>
+    <div class="slowHint">Slow-mo</div>
+
     <div class="info">
-      <div class="row">
-        <img src="pp3.jpg" alt="">
-        <div>
-          <div class="name">@petualang_travel</div>
-          <div class="desc">Sunrise Bromo 🌄 #travel</div>
-        </div>
-      </div>
+      <img src="p3.jpg" alt="">
+      <div class="name">@petualang_travel</div>
+      <div class="desc">Sunrise Bromo 🌄 #travel</div>
     </div>
+
     <div class="overlay">
       <button onclick="toggleLike(this)">❤<span>0</span></button>
-      <button>💬<span>0</span></button>
-      <button>↗️<span>Share</span></button>
+      <button onclick="toggleComment()">💬<span>0</span></button>
+      <button onclick="openPiP()">📺</button>
+      <button onclick="goFullscreen()">⛶</button>
     </div>
-    <div class="progress"><div class="progress-bar"></div></div>
+
+    <div class="progressWrap"></div>
     <button class="mute-btn" onclick="toggleMute(this)">🔇</button>
+    <div class="volSlider"><div class="volFill"></div></div>
   </section>
 
-  <!-- ===== PROFIL ===== -->
-  <div id="profile">
-    <button class="close-prof" onclick="closeProf()">←</button>
-    <div class="prof-header">
-      <img id="profImg" src="pp1.jpg" alt="">
+  <!-- ===== COMMENT SHEET ===== -->
+  <div id="commentSheet">
+    <div class="dragBar" onclick="toggleComment()"></div>
+    <h3>Komentar</h3>
+    <p style="margin-top:20px;color:#888">Belum ada komentar – jadi yang pertama!</p>
+  </div>
+
+  <!-- ===== PROFILE PAGE ===== -->
+  <div id="profilePage">
+    <button class="closeProf" onclick="closeProfile()">✕</button>
+    <div class="profHeader">
+      <img id="profImg" src="p1.jpg" alt="">
       <div>
         <h2 id="profName">@kucing_imut</h2>
-        <p id="profBio">Main di taman #cat #fyp</p>
+        <p>1.2 M followers · 234 following</p>
       </div>
     </div>
-    <div class="prof-bio">
-      <p>Followers: <b>1.2 M</b></p>
-      <p>Following: <b>234</b></p>
+    <div style="padding:20px">
       <p>Semua video lucu kucing saya 🐾</p>
     </div>
   </div>
 
 <script>
-  /* ===== swipe gesture ===== */
-  let startX=0,currentVid=null;
-  document.addEventListener('touchstart',e=>startX=e.touches[0].clientX);
-  document.addEventListener('touchend',e=>{
-    let endX=e.changedTouches[0].clientX,diff=startX-endX;
-    if(Math.abs(diff)<50)return;
-    if(diff<0){ // ke kanan → buka profil
-      const sec=document.querySelector('section.feed:nth-of-type('+(activeIndex+1)+')');
-      openProf(sec);
-    }
-  });
-
-  /* ===== profil ===== */
-  let profOpen=false,activeIndex=0;
-  function openProf(sec){
-    if(profOpen)return;
-    profOpen=true;
-    const img=sec.querySelector('.info img').src;
-    const name=sec.querySelector('.name').textContent;
-    const bio=sec.querySelector('.desc').textContent;
-    document.getElementById('profImg').src=img;
-    document.getElementById('profName').textContent=name;
-    document.getElementById('profBio').textContent=bio;
-    document.getElementById('profile').classList.add('open');
-    pauseAll();
-  }
-  function closeProf(){
-    profOpen=false;
-    document.getElementById('profile').classList.remove('open');
-    playCurrent();
-  }
-
-  /* ===== video play/pause ===== */
+  /* ===== global vars ===== */
+  let currentVid=document.querySelector('video');
+  let muted=true,currentSec=0;
+  const sections=document.querySelectorAll('section');
   const videos=document.querySelectorAll('video');
-  const feeds=document.querySelectorAll('section.feed');
-  const io=new IntersectionObserver(entries=>{
+
+  /* ===== lazy load video ===== */
+  const io=new IntersectionObserver((entries)=>{
     entries.forEach(en=>{
       if(en.isIntersecting){
-        activeIndex=[...feeds].indexOf(en.target);
-        if(!profOpen){
-          en.target.querySelector('video').play();
-          runProgress(en.target.querySelector('video'));
-        }
+        const v=en.target.querySelector('video');
+        if(!v.src&&v.dataset.src){v.src=v.dataset.src;v.load();}
+        currentVid=v;currentSec=[...sections].indexOf(en.target);
+        playCurrent();
+        buildProgress(v);
       }else{
         en.target.querySelector('video').pause();
-        resetProgress(en.target.querySelector('video'));
       }
     });
   },{threshold:.7});
-  feeds.forEach(f=>io.observe(f));
+  sections.forEach(s=>io.observe(s));
 
-  function pauseAll(){
-    videos.forEach(v=>{v.pause();resetProgress(v);});
-  }
-  function playCurrent(){
-    if(profOpen)return;
-    const v=feeds[activeIndex].querySelector('video');
-    v.play();runProgress(v);
-  }
+  /* ===== double-tap like ===== */
+  let tap=0;
+  sections.forEach(sec=>{
+    const dbl=sec.querySelector('.dblLayer');
+    dbl.addEventListener('touchstart',e=>{
+      tap++;setTimeout(()=>tap=0,300);
+      if(tap===2){
+        const heart=sec.querySelector('.heartPop');
+        heart.style.left=e.touches[0].clientX+'px';
+        heart.style.top=e.touches[0].clientY+'px';
+        heart.style.animation='none';heart.offsetHeight;
+        heart.style.animation='heartBang .5s ease';
+        const btn=sec.querySelector('.overlay button');
+        if(!btn.classList.contains('liked'))btn.click();
+        tap=0;
+      }
+    });
+  });
 
-  /* ===== progress ===== */
-  let barMap=new Map();
-  function runProgress(video){
-    const bar=video.closest('section').querySelector('.progress-bar');
-    const dur=video.duration*1000,start=Date.now();
-    function frame(){
-      const pct=(Date.now()-start)/dur*100;
-      bar.style.width=Math.min(pct,100)+'%';
-      if(pct<100) barMap.set(video,requestAnimationFrame(frame));
-      else { bar.style.width='0'; runProgress(video); } //loop
+  /* ===== hold slow-mo ===== */
+  let holdTimer;
+  sections.forEach(sec=>{
+    const v=sec.querySelector('video');
+    const hint=sec.querySelector('.slowHint');
+    sec.addEventListener('touchstart',()=>{
+      holdTimer=setTimeout(()=>{
+        v.playbackRate=.25;hint.style.display='block';
+      },500);
+    });
+    sec.addEventListener('touchend',()=>{
+      clearTimeout(holdTimer);
+      v.playbackRate=1;hint.style.display='none';
+    });
+  });
+
+  /* ===== segmented progress click ===== */
+  function buildProgress(v){
+    const wrap=v.closest('section').querySelector('.progressWrap');
+    wrap.innerHTML='';
+    const segs=10;
+    for(let i=0;i<segs;i++){
+      const d=document.createElement('div');d.className='seg';
+      const f=document.createElement('div');f.className='segFill';
+      d.appendChild(f);
+      d.onclick=()=>v.currentTime=i*v.duration/segs;
+      wrap.appendChild(d);
     }
-    cancelAnimationFrame(barMap.get(video)||0);
-    frame();
+    runProgress(v);
   }
-  function resetProgress(video){
-    cancelAnimationFrame(barMap.get(video)||0);
-    const bar=video.closest('section').querySelector('.progress-bar');
-    bar.style.width='0';
+  let barMap=new Map();
+  function runProgress(v){
+    const fills=v.closest('section').querySelectorAll('.segFill');
+    const dur=v.duration,segs=fills.length;
+    function frame(){
+      for(let i=0;i<segs;i++){
+        const start=i*dur/segs,end=(i+1)*dur/segs;
+        const pct=Math.min(100,Math.max(0,(v.currentTime-start)/(end-start)*100));
+        fills[i].style.width=pct+'%';
+      }
+      if(!v.paused) barMap.set(v,requestAnimationFrame(frame));
+    }
+    cancelAnimationFrame(barMap.get(v)||0);frame();
   }
 
   /* ===== like & mute ===== */
@@ -247,17 +277,96 @@
     let val=parseInt(n.textContent);
     n.textContent=btn.classList.contains('liked')?val+1:val-1;
   }
-  let muted=true;
   function toggleMute(btn){
     muted=!muted;
     videos.forEach(v=>v.muted=muted);
     btn.textContent=muted?'🔇':'🔊';
+    document.querySelector('.volSlider').style.display=muted?'none':'block';
+    updateVolBar();
+  }
+  function updateVolBar(){
+    const v=currentVid;
+    const bar=document.querySelector('.volFill');
+    bar.style.width=(v.volume*100)+'%';
+  }
+  /* volume drag */
+  let volDown=false;
+  const volBar=document.querySelector('.volSlider');
+  volBar.addEventListener('touchstart',e=>volDown=true);
+  window.addEventListener('touchmove',e=>{
+    if(!volDown)return;
+    const r=volBar.getBoundingClientRect();
+    const x=e.touches[0].clientX-r.left;
+    const pct=Math.min(1,Math.max(0,x/r.width));
+    currentVid.volume=pct;
+    updateVolBar();
+  });
+  window.addEventListener('touchend',()=>volDown=false);
+
+  /* ===== PiP & Fullscreen ===== */
+  function openPiP(){
+    if(currentVid.requestPictureInPicture)currentVid.requestPictureInPicture();
+  }
+  function goFullscreen(){
+    const sec=currentVid.closest('section');
+    if(sec.requestFullscreen)sec.requestFullscreen();
+    else if(sec.webkitRequestFullscreen)sec.webkitRequestFullscreen();
   }
 
-  /* ===== lazy load ===== */
-  videos.forEach(v=>{
-    if(!v.src&&v.dataset.src){v.src=v.dataset.src;v.load();}
+  /* ===== comment sheet ===== */
+  function toggleComment(){
+    const s=document.getElementById('commentSheet');
+    s.classList.toggle('open');
+    pauseAll();
+  }
+
+  /* ===== profile page ===== */
+  function openProfile(){
+    const sec=sections[currentSec];
+    const img=sec.querySelector('.info img').src;
+    const name=sec.querySelector('.name').textContent;
+    document.getElementById('profImg').src=img;
+    document.getElementById('profName').textContent=name;
+    document.getElementById('profilePage').classList.add('open');
+    pauseAll();
+  }
+  function closeProfile(){
+    document.getElementById('profilePage').classList.remove('open');
+    playCurrent();
+  }
+
+  /* ===== swipe gesture ===== */
+  let startX=0,startY=0;
+  document.addEventListener('touchstart',e=>{
+    startX=e.touches[0].clientX;startY=e.touches[0].clientY;
   });
+  document.addEventListener('touchend',e=>{
+    const endX=e.changedTouches[0].clientX,endY=e.changedTouches[0].clientY;
+    const dx=endX-startX,dy=endY-startY;
+    if(Math.abs(dx)<50&&Math.abs(dy)<50)return;
+    if(Math.abs(dx)>Math.abs(dy)){
+      if(dx>50)openProfile();          // swipe kanan
+      if(dx<-50)toggleComment();       // swipe kiri
+    }
+  });
+
+  /* ===== keyboard ===== */
+  document.addEventListener('keydown',e=>{
+    if(e.key===' ')e.preventDefault(),currentVid.paused?currentVid.play():currentVid.pause();
+    if(e.key==='m'||e.key==='M')toggleMute(document.querySelector('.mute-btn'));
+    if(e.key==='f'||e.key==='F')goFullscreen();
+    if(e.key==='ArrowLeft')currentVid.currentTime=Math.max(0,currentVid.currentTime-10);
+    if(e.key==='ArrowRight')currentVid.currentTime=Math.min(currentVid.duration,currentVid.currentTime+10);
+  });
+
+  /* ===== pause on tab blur ===== */
+  document.addEventListener('visibilitychange',()=>{
+    document.hidden?pauseAll():playCurrent();
+  });
+
+  /* ===== helpers ===== */
+  function playCurrent(){if(currentVid){currentVid.play();runProgress(currentVid);}}
+  function pauseAll(){videos.forEach(v=>{v.pause();cancelAnimationFrame(barMap.get(v)||0);});}
 </script>
 </body>
-        </html>
+  </html>
